@@ -1,45 +1,60 @@
-import os
-import time
+import tkinter as tk
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-class Target:
-    DIRECTORY_WATCH = 'c:/Users/kindk/VsCode/showFax/img/'
-    #watchDir에 감시하려는 디렉토리를 명시한다.
+from queue import Queue
+import sys
 
+class CustomHandler(FileSystemEventHandler):
+    def __init__(self, app):
+        FileSystemEventHandler.__init__(self)
+        self.app = app
+    def on_created(self, event): app.notify(event)
+    def on_deleted(self, event): app.notify(event)
+    def on_modified(self, event): app.notify(event)
+    def on_moved(self, event): app.notify(event)
+
+class App(object):
     def __init__(self):
-        self.observer = Observer()   #observer객체를 만듦
+        # path = sys.argv[1] if len(sys.argv) > 1 else "/tmp"
+        path = './img'
+        handler = CustomHandler(self)
 
-    def run(self):
-        event_handler = Handler()
-        self.observer.schedule(event_handler, self.DIRECTORY_WATCH, 
-                                                       recursive=True)
+        self.observer = Observer()
+        self.observer.schedule(handler, path, recursive=True)
+
+        self.queue = Queue()
+        self.root = tk.Tk()
+
+        self.text = tk.Text(self.root)
+        self.text.pack(fill="both", expand=True)
+
+        self.text.insert("end", "Watching %s...\n" % path)
+
+        self.root.bind("<Destroy>", self.shutdown)
+        self.root.bind("<<WatchdogEvent>>", self.handle_watchdog_event)
+
         self.observer.start()
-        try:
-            while True:
-                time.sleep(1)
-        except:
-            self.observer.stop()
-            print("Error")
-            self.observer.join()
 
-class Handler(FileSystemEventHandler):
-#FileSystemEventHandler 클래스를 상속받음.
-#아래 핸들러들을 오버라이드 함
+    def handle_watchdog_event(self, event):
+        """Called when watchdog posts an event"""
+        watchdog_event = self.queue.get()
+        print("event type:", type(watchdog_event))
+        self.text.insert("end", str(watchdog_event) + "\n")
 
-    #파일, 디렉터리가 move 되거나 rename 되면 실행
-    def on_moved(self, event):
-        print(event)
+    def shutdown(self, event):
+        """Perform safe shutdown when GUI has been destroyed"""
+        self.observer.stop()
+        self.observer.join()
 
-    def on_created(self, event): #파일, 디렉터리가 생성되면 실행
-        print(event)
+    def mainloop(self):
+        """Start the GUI loop"""
+        self.root.mainloop()
 
-    def on_deleted(self, event): #파일, 디렉터리가 삭제되면 실행
-        print(event)
+    def notify(self, event):
+        """Forward events from watchdog to GUI"""
+        self.queue.put(event)
+        self.root.event_generate("<<WatchdogEvent>>", when="tail")
 
-    def on_modified(self, event): #파일, 디렉터리가 수정되면 실행
-        print(event)
-
-# if __name__ == ‘__main__’: #본 파일에서 실행될 때만 실행되도록 함
-w = Target()
-w.run()
+app = App()
+app.mainloop()
