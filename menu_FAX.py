@@ -59,18 +59,19 @@ class MenuFax():
 
     def __init__(self, parent):
         # tkinter.Tk.__init__(self,parent)
-        self.parent = parent
+        self.frame = parent
+        self.parent = tkinter.Frame(self.frame)
         self.initialize()
         self.src_file =''
-
+        self.parent.pack(side='top')
     def initialize(self):
             
         # self.window=tkinter.Tk()
         # 윈도우창 설정
         
-        self.parent.title("웅천목재 프로그램")
-        self.parent.geometry("640x400+100+100")
-        self.parent.resizable(False, False)
+        # self.parent.title("웅천목재 프로그램")
+        # self.parent.geometry("640x400+100+100")
+        # self.parent.resizable(False, False)
         self.txt_value_entry = tkinter.StringVar()
         # 프레임 1
         self.frame=tkinter.Frame(self.parent, 
@@ -209,6 +210,6 @@ class MenuFax():
         # print(f'{self.company_name.get()}')
         # print(f'{self.chk_active.get()}')
  
-root = tkinter.Tk()
-app = MenuFax(root) 
-root.mainloop()
+# root = tkinter.Tk()
+# app = MenuFax(root) 
+# root.mainloop()
