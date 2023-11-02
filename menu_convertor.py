@@ -3,12 +3,55 @@ import tkinter.messagebox as msgbox
 from tkinter import * # __all__
 import lib_modify_file  as modify_file
 import datetime
+from io import BytesIO
+from PIL import Image
+import win32clipboard
+import time 
+
+class CB_button:
+    def __init__(self, frame, number):
+        self.__dst_file = ''
+        self.number = number+1
+        self.frame = frame
+        self.btn = Button(self.frame, padx=10, text=f'CB_{self.number}', command = self.send_to_clipboard)
+        self.btn.grid(row=1,column=number)
+
+    def change_bg_color(self, color):
+        print(f'{color=}')
+        self.btn.configure(bg=color)
+    @property
+    def filename(self):
+        return self.__dst_file
+    
+    @filename.setter
+    def filename(self,filename):
+        self.__dst_file = filename
+
+    
+
+    def send_to_clipboard(self):
+        if not self.__dst_file:
+            print("There is No file")
+        else : 
+            image = Image.open(self.__dst_file)
+            output = BytesIO()
+            image.convert("RGB").save(output, "BMP")
+            data = output.getvalue()[14:]
+            output.close()
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard()    
+            
+
 
 
 class PDFconvert():
 
     def __init__(self, parent):
         # tkinter.Tk.__init__(self,parent)
+        self.NUMBER_OF_CB = 8
+     
         self.parent = parent
         self.frame = Frame(self.parent)
         self.initialize()
@@ -43,14 +86,15 @@ class PDFconvert():
 
         
         self.frame_run = Frame(self.frame)
-        self.frame_run.pack(fill="x", padx=5, pady=5)
-
         self.btn_convert_jpg = Button(self.frame_run, padx=5, pady=5, text="JPG변환", width=12, command=self.cmd_pdf_to_jpg)
         self.btn_convert_jpg.pack(side="right", padx=5, pady=5)
 
         self.btn_rename = Button(self.frame_run, padx=5, pady=5, text="이름변경", width=12, command=self.cmd_rename)
         self.btn_rename.pack(side="right", padx=5, pady=5)
 
+
+        # self.frame_run = Frame(self.frame)
+        # self.frame_run.pack(fill="x", padx=5, pady=5)
 
         self.month = datetime.datetime.now().month
         self.make_mid_content = Entry(self.frame_run)
@@ -60,33 +104,47 @@ class PDFconvert():
         self.make_comp_name = Entry(self.frame_run)
         self.make_comp_name.pack(side="left", fill="x", expand=True, padx=5, pady=5, ipady=4) # 높이 변경
         self.make_comp_name.insert(END,f"업체명")
-
-        # 진행 상황 Progress Bar
-        self.frame_progress = LabelFrame(self.frame, text="진행상황")
-        self.frame_progress.pack(fill="x", padx=5, pady=5, ipady=5)
-
-        self.p_var = DoubleVar()
-        self.progress_bar = ttk.Progressbar(self.frame_progress, maximum=100, variable=self.p_var)
-        self.progress_bar.pack(fill="x", padx=5, pady=5)
-
-
-        # 하단 닫기 버튼
-
-        self.frame_run = Frame(self.frame)
         self.frame_run.pack(fill="x", padx=5, pady=5)
 
-        self.btn_close = Button(self.frame_run, padx=5, pady=5, text="닫기", width=12, command=self.parent.quit)
-        self.btn_close.pack(side="right", padx=5, pady=5)
+        
+        # 진행 상황 Progress Bar
+        self.frame_cb = LabelFrame(self.frame, text="Copy to Clipboard")
+        self.cb_label = Label(self.frame_cb, fg='red')
+        self.btn_list = []
+
+        for i in  range(self.NUMBER_OF_CB):
+            btn = CB_button(self.frame_cb,i)
+            self.btn_list.append(btn)
+        self.cb_label.grid(row=2,column=0)
+        self.frame_cb.pack(fill="x", padx=5, pady=5, ipady=5)
+
+
+
+    
 
     def cmd_pdf_to_jpg(self):
         if self.make_comp_name.get() == '업체명' :
             msgbox.showwarning('경고','업체명을 입력하세요')
         else :
-
             pdf_file = modify_file.Modify_file(self.txt_src_path.get())
             f_name = f'웅천목재_{self.make_mid_content.get()}_{self.make_comp_name.get()}'
             
-            if not pdf_file.pdf_to_jpg(self.txt_dest_path.get(),f_name) :
+            filename_jpg = pdf_file.pdf_to_jpg(self.txt_dest_path.get(),f_name)
+            # time.sleep(1)
+            
+            # self.send_to_clipboard(filename_jpg[0])
+            # print(f'{filename_jpg=}')
+            for i in range(self.NUMBER_OF_CB):
+                if len(filename_jpg) <= i :
+                    self.btn_list[i].change_bg_color("#f0f0f0")
+                    self.btn_list[i].filename = ''
+                else : 
+                    self.btn_list[i].change_bg_color("red")
+                    self.btn_list[i].filename = filename_jpg[i]
+                    
+
+
+            if not  filename_jpg:
                 msgbox.showwarning('경고','PDF 파일이 없습니다.')
             
             self.make_comp_name.delete(0,'end')
@@ -111,24 +169,7 @@ class PDFconvert():
             # print("업체명을 입력하세요.")
             msgbox.showwarning('경고','업체명을 입력하세요')
 
-        # f_name = f'웅천목재_{make_mid_content.get()}_{make_comp_name.get()}'
-        # modify_file.re_name(txt_src_path.get(),txt_dest_path.get(),f_name)
-        # progress_bar.update()
+    
 
-
-
-
-# root = Tk()
-
-# app = PDFconvert(root)
-# root.title("OC PROGRAMS")
-# # root.ttk.call('wm','./icon.png')
-# # icon = PhotoImage(file='./icon.png ')
-# # root.wm_iconphoto(False, icon)
-
-
-# root.resizable(False, False)
-# root.mainloop()
-
-
+    
 

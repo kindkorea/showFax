@@ -6,7 +6,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from queue import Queue
 import sys
-
+import subprocess
 
 class CustomHandler(FileSystemEventHandler):
     def __init__(self, app):
@@ -140,7 +140,10 @@ class MenuFax():
     def items_doubleClicked(self,event):
         if not event.widget.curselection():
             return
-        print(tkinter.Event)
+        selected_indices = self.listbox.curselection()[0]
+        self.src_file = self.listbox.get(selected_indices)
+        subprocess.Popen(f'c:/imagine/imagine64.exe {self.src_file}')
+
         # selected_indices = self.listbox.curselection()
         # msg = self.listbox.get(selected_indices[0])
         # os.system(f'./img/{msg}')
