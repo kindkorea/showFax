@@ -7,18 +7,25 @@ from io import BytesIO
 from PIL import Image
 import win32clipboard
 import time 
+import os
 
 class CB_button:
-    def __init__(self, frame, number):
+    def __init__(self, frame, cb_label, number):
         self.__dst_file = ''
         self.number = number+1
         self.frame = frame
+        self.cb_label = cb_label
+      
         self.btn = Button(self.frame, padx=10, text=f'CB_{self.number}', command = self.send_to_clipboard)
-        self.btn.grid(row=1,column=number)
+        # self.label = Label(self.cb_label, textvariable=self.cb_copied, fg='red')
+        self.btn.grid(row=1 , column=self.number)
+        # self.label.grid(row=2,column=0)
+       
+
 
     def change_bg_color(self, color):
-        print(f'{color=}')
         self.btn.configure(bg=color)
+        
     @property
     def filename(self):
         return self.__dst_file
@@ -31,8 +38,9 @@ class CB_button:
 
     def send_to_clipboard(self):
         if not self.__dst_file:
-            print("There is No file")
+            self.cb_label.set(f"There is no file")
         else : 
+            file_name = os.path.basename(self.__dst_file)
             image = Image.open(self.__dst_file)
             output = BytesIO()
             image.convert("RGB").save(output, "BMP")
@@ -42,6 +50,7 @@ class CB_button:
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
             win32clipboard.CloseClipboard()    
+            self.cb_label.set(f"{file_name} copied!!")
             
 
 
@@ -109,14 +118,19 @@ class PDFconvert():
         
         # 진행 상황 Progress Bar
         self.frame_cb = LabelFrame(self.frame, text="Copy to Clipboard")
-        self.cb_label = Label(self.frame_cb, fg='red')
+        self.cb_label_frame = Frame(self.frame)
+        self.cb_label_text = StringVar()
+        self.cb_label = Label(self.cb_label_frame, textvariable=self.cb_label_text, fg='red')
         self.btn_list = []
 
         for i in  range(self.NUMBER_OF_CB):
-            btn = CB_button(self.frame_cb,i)
+            btn = CB_button(self.frame_cb,self.cb_label_text,i)
             self.btn_list.append(btn)
-        self.cb_label.grid(row=2,column=0)
+            
+        # self.cb_label.grid(row=2,column=0)
         self.frame_cb.pack(fill="x", padx=5, pady=5, ipady=5)
+        self.cb_label.pack()
+        self.cb_label_frame.pack()
 
 
 
