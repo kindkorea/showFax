@@ -146,16 +146,29 @@ class PDFconvert(LabelFrame):
                 else : 
                     self.__btn_color(i,'red')
 
+    def __cmd_re_name(self,src_file, dest_path, change_filename):
         
+        file_name_ext = os.path.basename(src_file)
+        file_name, file_ext = os.path.splitext(file_name_ext)
+        file_path = f'{dest_path}/{change_filename}'
+        rename = f'{file_path}/{change_filename}{file_ext}'
+        
+        self.__cmd_createDirectory(file_path)
+        os.startfile(file_path)
+        if os.path.exists(rename):
+            print(f"{rename} is exist")
+        else :    
+            os.rename(src_file , rename)
+            return rename    
 
     def cmd_rename(self):
         if self.make_comp_name.get() != '업체명' :
-            pdf_file = modify_file.Modify_file(self.PDF_SRC_PATH)
+            recent_pdf = self.__most_recent_pdf()
 
             f_name = f'웅천목재_{self.make_mid_content.get()}_{self.make_comp_name.get()}'
             # result = pdf_file.pdf_rename(txt_dest_path.get(),f_name)
 
-            if not pdf_file.pdf_rename(self.PDF_TO_JPG_DST_PATH,f_name) :
+            if not self.__cmd_re_name(recent_pdf, self.PDF_TO_JPG_DST_PATH, f_name) :
                 msgbox.showwarning('경고','PDF 파일이 없습니다.')
 
             self.make_comp_name.delete(0,'end')

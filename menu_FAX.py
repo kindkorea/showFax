@@ -1,4 +1,5 @@
-import tkinter
+import tkinter.ttk as ttk
+from tkinter import * # __all__
 import os
 import glob
 import time
@@ -17,17 +18,17 @@ class CustomHandler(FileSystemEventHandler):
     def on_modified(self, event): self.app.notify(event)
     def on_moved(self, event): self.app.notify(event)
 
-class MenuFax():
-
-    def __init__(self, parent, dir_path):
-
+class MenuFax(Frame):
+    
+    def __init__(self,master, dir_path):
+        super().__init__(master)
 
         self.DIRECTOR_PATH = dir_path
-        self.parent = tkinter.Frame(parent)
-        self.initialize()
         self.src_file =''
-        self.src_path = self.DIRECTOR_PATH
-        self.parent.pack(side='top')
+        # self.src_path = self.DIRECTOR_PATH
+
+        self.initialize()
+        
 
         # Observer 생성
         handler = CustomHandler(self)
@@ -40,21 +41,21 @@ class MenuFax():
 
     def initialize(self):
 
-        self.txt_value_entry = tkinter.StringVar()
+        self.txt_value_entry = StringVar()
         # 프레임1
-        self.frame=tkinter.LabelFrame(self.parent, 
+        self.frame=LabelFrame(self, 
                             width=300,
                             text='FAX'
                             )
       
-        self.scrollbar=tkinter.Scrollbar(self.frame)
-        self.scrollbar.pack(side="right", fill="y")
+        self.scrollbar=Scrollbar(self.frame)
+        self.scrollbar.grid(row=0)
 
 
-        self.listbox=tkinter.Listbox(self.frame, 
+        self.listbox=Listbox(self.frame, 
                                 yscrollcommand = self.scrollbar.set,
                                 # listvariable=var,
-                                width=100,
+                                width=50,
                                 )
 
      
@@ -62,44 +63,42 @@ class MenuFax():
         self.listbox.bind('<Double-Button-1>', self.items_doubleClicked)
 
 
-        self.listbox.pack(side="left")
+        self.listbox.grid(row=0)
 
         self.scrollbar["command"]=self.listbox.yview
-        self.chk_active = tkinter.IntVar()
+        self.chk_active = IntVar()
+
+        # self.frame2 =Frame(self, 
+        #                     width=300,
+        #                     )
+
+        self.btn_all_files = Button(self.frame, text='모든파일' ,command=self.all_files)
+        self.btn_noCheck_files = Button(self.frame, text='미확인', command=self.noCheck_files)
+        self.btn_Checked_files = Button(self.frame, text='확인', command=self.checked_files)
+
+        self.btn_all_files.grid(row=1, column=0)
+        self.btn_noCheck_files.grid(row=1, column=1)
+        self.btn_Checked_files.grid(row=1, column=2)
+
+        # self.frame3 =Frame(self, 
+        #                     width=300,
+        #                     )2
 
 
-        # ������ 2
-        self.frame2 =tkinter.Frame(self.parent, 
-                            width=300,
-                            )
-
-        self.btn_all_files = tkinter.Button(self.frame2, text='모든파일' ,command=self.all_files)
-        self.btn_noCheck_files = tkinter.Button(self.frame2, text='미확인', command=self.noCheck_files)
-        self.btn_Checked_files = tkinter.Button(self.frame2, text='확인', command=self.checked_files)
+        self.chk_button = Checkbutton(self.frame,text='확인' , variable=self.chk_active)
+        self.btn_convert = Button(self.frame,text='이름변환', command=self.convert_filename)
+        self.company_name = Entry(self.frame,textvariable=self.txt_value_entry)
 
 
-        self.frame3 =tkinter.Frame(self.parent, 
-                            width=300,
-                            )
+        self.company_name.grid(row=2, column=0)
+        self.chk_button.grid(row=2, column=1)
+        self.btn_convert.grid(row=2, column=2)
 
-
-        self.chk_button = tkinter.Checkbutton(self.frame3,text='확인' , variable=self.chk_active)
-        self.btn_convert = tkinter.Button(self.frame3,text='이름변환', command=self.convert_filename)
-        self.company_name = tkinter.Entry(self.frame3,textvariable=self.txt_value_entry)
-
-
-        self.company_name.grid(row=0, column=0)
-        self.chk_button.grid(row=0, column=1)
-        self.btn_convert.grid(row=0, column=2)
-
-        self.btn_all_files.grid(row=0, column=0)
-        self.btn_noCheck_files.grid(row=0, column=1)
-        self.btn_Checked_files.grid(row=0, column=2)
         # chk_button.select()
 
-        self.frame.pack()
-        self.frame2.pack()
-        self.frame3.pack()
+        self.frame.grid(column=0, row=0)
+        # self.frame2.pack()
+        # self.frame3.pack()
         self.noCheck_files()
 
     # print(f'{chk_active.get()}')
@@ -160,9 +159,9 @@ class MenuFax():
                 file_name , file_ext = os.path.splitext(file_name_ext)
 
                 if is_checked :
-                    dst_file_name = f'v{dst_file}'
+                    dst_file_name = f'v_{dst_file}'
                 else : 
-                    dst_file_name = dst_file.lstrip('v')
+                    dst_file_name = dst_file.lstrip('v_')
                 
                 try :
                     dst_file_name = f'{file_path}/{dst_file_name}_{file_ctime}{file_ext}'
@@ -179,15 +178,15 @@ class MenuFax():
         return  [file for file in load_files if file.endswith('.jpg')]
 
     def all_files(self):
-        self.listbox['listvariable'] = tkinter.Variable(value=self.get_file())
+        self.listbox['listvariable'] = Variable(value=self.get_file())
 
     def noCheck_files(self):
         noChk_file_list = [file for file in self.get_file() if os.path.basename(file)[0] != 'v']
-        self.listbox['listvariable'] = tkinter.Variable(value=noChk_file_list)
+        self.listbox['listvariable'] = Variable(value=noChk_file_list)
 
     def checked_files(self):
         noChk_file_list = [file for file in self.get_file() if os.path.basename(file)[0] == 'v']
-        self.listbox['listvariable'] = tkinter.Variable(value=noChk_file_list)
+        self.listbox['listvariable'] = Variable(value=noChk_file_list)
 
     def convert_filename(self):
         self.FAX_rename( self.company_name.get(), self.chk_active.get())
