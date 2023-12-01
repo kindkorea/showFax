@@ -1,109 +1,43 @@
 import tkinter.ttk as ttk
 import tkinter.messagebox as msgbox
 from tkinter import * # __all__
-import lib_modify_file  as modify_file
 import datetime
 from io import BytesIO
 from PIL import Image
 import win32clipboard
-import time 
+# import time 
 import os
 
-class CB_button:
-    def __init__(self, frame, cb_label, number):
-        self.__dst_file = ''
-        self.number = number+1
-        self.frame = frame
-        self.cb_label = cb_label
-      
-        self.btn = Button(self.frame, padx=10, text=f'CB_{self.number}', command = self.send_to_clipboard)
-        # self.label = Label(self.cb_label, textvariable=self.cb_copied, fg='red')
-        self.btn.grid(row=1 , column=self.number)
-        # self.label.grid(row=2,column=0)
-       
+from pdf2image import convert_from_path
+
+import glob 
 
 
-    def change_bg_color(self, color):
-        self.btn.configure(bg=color)
-        
-    @property
-    def filename(self):
-        return self.__dst_file
-    
-    @filename.setter
-    def filename(self,filename):
-        self.__dst_file = filename
+class PDFconvert(LabelFrame):
 
-    
+    def __init__(self, master, src_path, dst_path):
+        super().__init__(master)
 
-    def send_to_clipboard(self):
-        if not self.__dst_file:
-            self.cb_label.set(f"There is no file")
-        else : 
-            file_name = os.path.basename(self.__dst_file)
-            image = Image.open(self.__dst_file)
-            output = BytesIO()
-            image.convert("RGB").save(output, "BMP")
-            data = output.getvalue()[14:]
-            output.close()
-            win32clipboard.OpenClipboard()
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            win32clipboard.CloseClipboard()    
-            self.cb_label.set(f"{file_name} copied!!")
-            
-
-
-
-class PDFconvert():
-
-    def __init__(self, parent):
-        # tkinter.Tk.__init__(self,parent)
         self.NUMBER_OF_CB = 8
-     
-        self.parent = parent
-        self.frame = Frame(self.parent)
-        self.initialize()
+        self.PDF_SRC_PATH = src_path
+        self.PDF_TO_JPG_DST_PATH = dst_path
+        
         self.src_file =''
-        self.frame.pack(side='top')
+        self.converted_jpg = []
+        self.bnt_list_cb = []
 
+        self.initialize()
+        # self.master[LabelFrame]['text'] = 'hello'
+
+    # setting GUI
     def initialize(self):
 
-        # 로드 경로 프레임
-        self.src_path_frame = LabelFrame(self.frame, text="로드경로")
-        self.src_path_frame.pack(fill="x", padx=5, pady=5, ipady=5)
-
-        self.txt_src_path = Entry(self.src_path_frame)
-        self.txt_src_path.pack(side="left", fill="x", expand=True, padx=5, pady=5, ipady=4) # 높이 변경
-        self.txt_src_path.insert(END,"C:/Users/kindk/Downloads")
-
-        self.btn_src_path = Button(self.src_path_frame, text="찾아보기", width=10)
-        self.btn_src_path.pack(side="right", padx=5, pady=5)
-
-        # 저장 경로 프레임
-
-
-        self.path_frame = LabelFrame(self.frame, text="저장경로")
-        self.path_frame.pack(fill="x", padx=5, pady=5, ipady=5)
-
-        self.txt_dest_path = Entry(self.path_frame)
-        self.txt_dest_path.pack(side="left", fill="x", expand=True, padx=5, pady=5, ipady=4) # 높이 변경
-        self.txt_dest_path.insert(END,"C:/Users/kindk/Desktop")
-
-        self.btn_dest_path = Button(self.path_frame, text="찾아보기", width=10 )
-        self.btn_dest_path.pack(side="right", padx=5, pady=5)
-
-        
-        self.frame_run = Frame(self.frame)
+        self.frame_run = LabelFrame(self,text='button')
         self.btn_convert_jpg = Button(self.frame_run, padx=5, pady=5, text="JPG변환", width=12, command=self.cmd_pdf_to_jpg)
         self.btn_convert_jpg.pack(side="right", padx=5, pady=5)
 
         self.btn_rename = Button(self.frame_run, padx=5, pady=5, text="이름변경", width=12, command=self.cmd_rename)
         self.btn_rename.pack(side="right", padx=5, pady=5)
-
-
-        # self.frame_run = Frame(self.frame)
-        # self.frame_run.pack(fill="x", padx=5, pady=5)
 
         self.month = datetime.datetime.now().month
         self.make_mid_content = Entry(self.frame_run)
@@ -116,64 +50,114 @@ class PDFconvert():
         self.frame_run.pack(fill="x", padx=5, pady=5)
 
         
-        # 진행 상황 Progress Bar
-        self.frame_cb = LabelFrame(self.frame, text="Copy to Clipboard")
-        self.cb_label_frame = Frame(self.frame)
-        self.cb_label_text = StringVar()
-        self.cb_label = Label(self.cb_label_frame, textvariable=self.cb_label_text, fg='red')
-        self.btn_list = []
-
+        # copy to clipboard button
+        self.frame_cb = LabelFrame(self, text="Copy to Clipboard")
+    
         for i in  range(self.NUMBER_OF_CB):
-            btn = CB_button(self.frame_cb,self.cb_label_text,i)
-            self.btn_list.append(btn)
+            self.bnt_list_cb.append(self.__make_btn(self.frame_cb, 1, i, 6, f'CB{i+1}'))
             
-        # self.cb_label.grid(row=2,column=0)
         self.frame_cb.pack(fill="x", padx=5, pady=5, ipady=5)
-        self.cb_label.pack()
-        self.cb_label_frame.pack()
 
+    def __btn_cell_data(self, index):
+        self.__send_to_clipboard(index)
+        print(index)
 
+    def __make_btn(self,frame, row, column, width, text):
+        e = Button(frame, width=width , text = text , command= lambda : self.__btn_cell_data(column))
+        e.coords = (row-1, column-1)
+        e.grid(row=row, column=column)
+        return e
+    
+    def __btn_color(self,index,state):
+        self.bnt_list_cb[index].configure(bg=state)
 
     
+    def __send_to_clipboard(self,index):
+        
+        selected_file = self.converted_jpg[index]
+        if not selected_file:
+            self.cb_label.set(f"There is no file")
+        else : 
+            # file_name = os.path.basename(selected_file)
+            image = Image.open(selected_file)
+            output = BytesIO()
+            image.convert("RGB").save(output, "BMP")
+            data = output.getvalue()[14:]
+            output.close()
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard()    
+            self.__btn_color(index,'#f0f0f0')
+
+    def __most_recent_pdf( self , load_files):
+        pdf_file_list = [file for file in load_files if file.endswith('.pdf' and '.PDF')]
+        pdf_files_with_time =[]
+        print(pdf_file_list)
+        for pdf_file in pdf_file_list:
+            pdf_files_with_time.append((pdf_file,os.path.getctime(pdf_file)))
+        return max(pdf_files_with_time,key=lambda x: x[1])[0]
+    
+    def __cmd_createDirectory(self,directory):
+        try:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+        except OSError:
+            print("Error: Failed to create the directory.")
+
+    def __pdf_to_jpg(self, src_file , dst_path , change_filename):
+        
+        try : 
+            # most_recent_pdf = self.__most_recent_pdf()
+
+            pages = convert_from_path(src_file, dpi=200)
+            output_filelist = []  
+            file_path = f'{dst_path}/{change_filename}'
+
+            self.__cmd_createDirectory(file_path)
+            os.startfile(file_path)
+
+            for i, page in enumerate(pages):
+                o_filename = f"{file_path}/{change_filename}#{str(i)}.jpg" 
+                page.save(o_filename, "JPEG")
+                output_filelist.append(o_filename)
+
+            return  output_filelist
+        except :
+            print("No PDF file.")
 
     def cmd_pdf_to_jpg(self):
-        if self.make_comp_name.get() == '업체명' :
-            msgbox.showwarning('경고','업체명을 입력하세요')
+
+        load_files = glob.glob(self.PDF_SRC_PATH+'/*.*')
+        if not load_files :
+            print('no pdf file')
         else :
-            pdf_file = modify_file.Modify_file(self.txt_src_path.get())
             f_name = f'웅천목재_{self.make_mid_content.get()}_{self.make_comp_name.get()}'
-            
-            filename_jpg = pdf_file.pdf_to_jpg(self.txt_dest_path.get(),f_name)
-            # time.sleep(1)
-            
-            # self.send_to_clipboard(filename_jpg[0])
-            # print(f'{filename_jpg=}')
+            src_pdf_file = self.__most_recent_pdf(load_files)
+            # print(f'recent file : {src_pdf_file}')
+
+            self.converted_jpg = self.__pdf_to_jpg(src_pdf_file , self.PDF_TO_JPG_DST_PATH,  f_name)
+
+            # print(self.converted_jpg)
             for i in range(self.NUMBER_OF_CB):
-                if len(filename_jpg) <= i :
-                    self.btn_list[i].change_bg_color("#f0f0f0")
-                    self.btn_list[i].filename = ''
+                if len(self.converted_jpg) <= i :
+                    self.__btn_color(i,'#f0f0f0')
+                    # self.bnt_list_cb[i].configure(bg= "#f0f0f0")
+                  
                 else : 
-                    self.btn_list[i].change_bg_color("red")
-                    self.btn_list[i].filename = filename_jpg[i]
-                    
+                    self.__btn_color(i,'red')
+                    # self.bnt_list_cb[i].configure(bg= "red")
 
-
-            if not  filename_jpg:
-                msgbox.showwarning('경고','PDF 파일이 없습니다.')
-            
-            self.make_comp_name.delete(0,'end')
-            self.make_comp_name.insert(END,"업체명")
-            # modify_file.convert_jpg(txt_src_path.get(),txt_dest_path.get(),f_name)
-            # progress_bar.update()
+        
 
     def cmd_rename(self):
         if self.make_comp_name.get() != '업체명' :
-            pdf_file = modify_file.Modify_file(self.txt_src_path.get())
+            pdf_file = modify_file.Modify_file(self.PDF_SRC_PATH)
 
             f_name = f'웅천목재_{self.make_mid_content.get()}_{self.make_comp_name.get()}'
             # result = pdf_file.pdf_rename(txt_dest_path.get(),f_name)
 
-            if not pdf_file.pdf_rename(self.txt_dest_path.get(),f_name) :
+            if not pdf_file.pdf_rename(self.PDF_TO_JPG_DST_PATH,f_name) :
                 msgbox.showwarning('경고','PDF 파일이 없습니다.')
 
             self.make_comp_name.delete(0,'end')

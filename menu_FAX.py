@@ -19,10 +19,10 @@ class CustomHandler(FileSystemEventHandler):
 
 class MenuFax():
 
-    def __init__(self, parent):
+    def __init__(self, parent, dir_path):
 
 
-        self.DIRECTOR_PATH = 'f:\OONGCHEON\사무실서류\수신팩스\/'
+        self.DIRECTOR_PATH = dir_path
         self.parent = tkinter.Frame(parent)
         self.initialize()
         self.src_file =''
