@@ -17,12 +17,11 @@ class PDFconvert(LabelFrame):
 
     def __init__(self, master, src_path, dst_path):
         super().__init__(master)
-
         self.NUMBER_OF_CB = 8
         self.PDF_SRC_PATH = src_path
         self.PDF_TO_JPG_DST_PATH = dst_path
         
-        self.src_file =''
+        # self.src_file =''
         self.converted_jpg = []
         self.bnt_list_cb = []
 
@@ -90,7 +89,8 @@ class PDFconvert(LabelFrame):
             win32clipboard.CloseClipboard()    
             self.__btn_color(index,'#f0f0f0')
 
-    def __most_recent_pdf( self , load_files):
+    def __most_recent_pdf( self):
+        load_files = glob.glob(self.PDF_SRC_PATH+'/*.*')
         pdf_file_list = [file for file in load_files if file.endswith('.pdf' and '.PDF')]
         pdf_files_with_time =[]
         print(pdf_file_list)
@@ -126,27 +126,25 @@ class PDFconvert(LabelFrame):
         except :
             print("No PDF file.")
 
+   
+
+
     def cmd_pdf_to_jpg(self):
 
-        load_files = glob.glob(self.PDF_SRC_PATH+'/*.*')
-        if not load_files :
+        recent_pdf = self.__most_recent_pdf()
+
+        if not recent_pdf :
             print('no pdf file')
         else :
             f_name = f'웅천목재_{self.make_mid_content.get()}_{self.make_comp_name.get()}'
-            src_pdf_file = self.__most_recent_pdf(load_files)
-            # print(f'recent file : {src_pdf_file}')
+            self.converted_jpg = self.__pdf_to_jpg(recent_pdf , self.PDF_TO_JPG_DST_PATH,  f_name)
 
-            self.converted_jpg = self.__pdf_to_jpg(src_pdf_file , self.PDF_TO_JPG_DST_PATH,  f_name)
-
-            # print(self.converted_jpg)
             for i in range(self.NUMBER_OF_CB):
                 if len(self.converted_jpg) <= i :
                     self.__btn_color(i,'#f0f0f0')
-                    # self.bnt_list_cb[i].configure(bg= "#f0f0f0")
                   
                 else : 
                     self.__btn_color(i,'red')
-                    # self.bnt_list_cb[i].configure(bg= "red")
 
         
 

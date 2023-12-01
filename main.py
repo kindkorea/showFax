@@ -12,7 +12,7 @@ root = tkinter.Tk()
 
 root.title("OC PROGRAMS")
 app1 = menu_convertor.PDFconvert(root, PDF_SRC_DIR_PATH, PDF_TO_JPG_DEST_DIR_PATH)
-app1.pack()
+app1.pack(padx= 10, pady=10)
 
 app2 = menu_FAX.MenuFax(root,FAX_DIR )
 
